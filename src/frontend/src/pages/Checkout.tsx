@@ -30,6 +30,15 @@ export default function Checkout() {
     setLoading(true);
     setError("");
     try {
+      // Save cart snapshot to sessionStorage before Stripe redirect
+      const pendingItems = items.map((item) => ({
+        productName: item.product.name,
+        quantity: item.quantity,
+        price: item.product.price,
+      }));
+      sessionStorage.setItem("lp_pending_items", JSON.stringify(pendingItems));
+      sessionStorage.setItem("lp_pending_total", totalPrice);
+
       const shoppingItems = items.map((item) => ({
         productName: item.product.name,
         currency: "inr",

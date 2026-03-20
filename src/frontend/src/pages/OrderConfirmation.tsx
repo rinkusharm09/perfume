@@ -2,11 +2,40 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
 import { useActor } from "@/hooks/useActor";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertCircle, CheckCircle2, Loader2, ShoppingBag } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  ClipboardList,
+  Loader2,
+  ShoppingBag,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type Status = "loading" | "success" | "failed" | "no-session";
+
+interface StoredOrderItem {
+  productName: string;
+  quantity: number;
+  price: string;
+}
+
+interface StoredOrder {
+  orderId: string;
+  sessionId: string;
+  items: StoredOrderItem[];
+  totalAmount: string;
+  status: string;
+  timestamp: number;
+}
+
+function saveOrderToLocalStorage(order: StoredOrder) {
+  const existing: StoredOrder[] = JSON.parse(
+    localStorage.getItem("lp_orders") || "[]",
+  );
+  existing.unshift(order);
+  localStorage.setItem("lp_orders", JSON.stringify(existing));
+}
 
 export default function OrderConfirmation() {
   const { actor, isFetching } = useActor();
@@ -14,6 +43,7 @@ export default function OrderConfirmation() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<Status>("loading");
   const [message, setMessage] = useState("");
+  const [orderId, setOrderId] = useState("");
   const clearedRef = useRef(false);
 
   const verifySession = useCallback(async () => {
@@ -35,6 +65,24 @@ export default function OrderConfirmation() {
         setStatus("success");
         setMessage(result.completed.response);
         if (!clearedRef.current) {
+          // Save order to localStorage
+          const pendingItemsRaw = sessionStorage.getItem("lp_pending_items");
+          const pendingTotal = sessionStorage.getItem("lp_pending_total") || "";
+          const pendingItems: StoredOrderItem[] = pendingItemsRaw
+            ? JSON.parse(pendingItemsRaw)
+            : [];
+          const newOrderId = `LP-${Date.now().toString(36).toUpperCase()}`;
+          setOrderId(newOrderId);
+          saveOrderToLocalStorage({
+            orderId: newOrderId,
+            sessionId,
+            items: pendingItems,
+            totalAmount: pendingTotal,
+            status: "confirmed",
+            timestamp: Date.now(),
+          });
+          sessionStorage.removeItem("lp_pending_items");
+          sessionStorage.removeItem("lp_pending_total");
           clearCart();
           clearedRef.current = true;
         }
@@ -99,8 +147,14 @@ export default function OrderConfirmation() {
                 Thank you for your purchase. Your luxurious fragrances are being
                 prepared with the utmost care.
               </p>
+              {orderId && (
+                <p className="text-xs text-muted-foreground font-sans-body mt-1">
+                  Order ID:{" "}
+                  <span className="text-rose-gold font-medium">{orderId}</span>
+                </p>
+              )}
               {message && (
-                <p className="text-xs text-muted-foreground font-sans-body mt-1 mb-6">
+                <p className="text-xs text-muted-foreground font-sans-body mt-1 mb-2">
                   {message}
                 </p>
               )}
@@ -114,14 +168,25 @@ export default function OrderConfirmation() {
               <p className="text-xs text-muted-foreground font-sans-body mb-6">
                 A confirmation email will be sent to you shortly.
               </p>
-              <Button
-                onClick={() => navigate({ to: "/collection" })}
-                className="bg-rose-gold hover:bg-rose-gold/90 text-white font-sans-body text-xs tracking-[0.15em] uppercase rounded-sm px-8 h-11"
-                data-ocid="order.primary_button"
-              >
-                <ShoppingBag size={14} className="mr-2" />
-                Continue Shopping
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+                <Button
+                  onClick={() => navigate({ to: "/orders" })}
+                  variant="outline"
+                  className="font-sans-body text-xs tracking-widest uppercase rounded-sm border-rose-gold/40 text-rose-gold hover:bg-rose-gold/5 flex-1"
+                  data-ocid="order.secondary_button"
+                >
+                  <ClipboardList size={14} className="mr-2" />
+                  My Orders
+                </Button>
+                <Button
+                  onClick={() => navigate({ to: "/collection" })}
+                  className="bg-rose-gold hover:bg-rose-gold/90 text-white font-sans-body text-xs tracking-[0.15em] uppercase rounded-sm flex-1"
+                  data-ocid="order.primary_button"
+                >
+                  <ShoppingBag size={14} className="mr-2" />
+                  Shop More
+                </Button>
+              </div>
             </div>
           )}
 

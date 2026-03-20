@@ -11,6 +11,7 @@ import FragranceDetail from "@/pages/FragranceDetail";
 import Home from "@/pages/Home";
 import Journal from "@/pages/Journal";
 import OrderConfirmation from "@/pages/OrderConfirmation";
+import OrderHistory from "@/pages/OrderHistory";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -25,6 +26,7 @@ import { AnimatePresence, motion } from "motion/react";
 const queryClient = new QueryClient();
 
 const rootRoute = createRootRoute({
+  notFoundComponent: () => <Home />,
   component: () => (
     <CartProvider>
       <div className="min-h-screen flex flex-col">
@@ -92,6 +94,12 @@ const orderConfirmationRoute = createRoute({
   component: OrderConfirmation,
 });
 
+const orderHistoryRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/orders",
+  component: OrderHistory,
+});
+
 const fragranceDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/fragrance/$id",
@@ -106,12 +114,17 @@ const routeTree = rootRoute.addChildren([
   contactRoute,
   checkoutRoute,
   orderConfirmationRoute,
+  orderHistoryRoute,
   fragranceDetailRoute,
 ]);
 
 const hashHistory = createHashHistory();
 
-const router = createRouter({ routeTree, history: hashHistory });
+const router = createRouter({
+  routeTree,
+  history: hashHistory,
+  defaultNotFoundComponent: () => <Home />,
+});
 
 declare module "@tanstack/react-router" {
   interface Register {

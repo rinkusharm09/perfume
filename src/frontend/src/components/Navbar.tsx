@@ -23,6 +23,7 @@ export default function Navbar() {
     { to: "/about" as const, label: "ABOUT" },
     { to: "/journal" as const, label: "JOURNAL" },
     { to: "/contact" as const, label: "CONTACT" },
+    { to: "/orders" as const, label: "MY ORDERS" },
   ];
 
   const isActive = (path: string) =>
@@ -76,8 +77,9 @@ export default function Navbar() {
           ))}
         </nav>
 
-        {/* Cart icon + Mobile toggle */}
+        {/* Right actions */}
         <div className="flex items-center gap-3">
+          {/* Cart button */}
           <button
             type="button"
             onClick={() => setCartOpen(true)}
